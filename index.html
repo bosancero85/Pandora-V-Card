@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pandora Systems | Digital Business Card</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Orbitron & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            neonViolet: '#9D00FF',
+            neonCyan: '#00F0FF',
+            darkBg: '#090a10',
+            darkSurface: '#121023'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Orbitron', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Global Reset & Base Setup */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #090a10;
+      font-family: 'Inter', sans-serif;
+      color: #F1F5F9;
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      user-select: none;
+    }
+
+    /* Ambient Cyber Grid Background */
+    .cyber-grid {
+      background-image: 
+        linear-gradient(rgba(157, 0, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.06) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    /* Glassmorphism Surface Effect */
+    .glass-card {
+      background: rgba(18, 16, 35, 0.65);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(157, 0, 255, 0.35);
+      box-shadow: 
+        0 10px 40px -10px rgba(157, 0, 255, 0.4),
+        inset 0 0 15px rgba(0, 240, 255, 0.15);
+      border-radius: 20px;
+    }
+
+    /* STRICT 3D OVERLAY LAYOUT RULES - Eliminates Offset / Stacking Issues */
+    .card-scene {
+      perspective: 1200px;
+      width: 440px;
+      max-width: 90vw;
+      height: 326px;
+      position: relative;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 480px) {
+      .card-scene {
+        height: 355px;
+      }
+      .card .contact-tile {
+        padding: 0.375rem;
+      }
+      .card .contact-tile > div:first-child {
+        gap: 0.375rem;
+      }
+      .card .contact-hint {
+        display: none;
+      }
+      .card .social-tile {
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.25rem;
+      }
+      .card .social-tile .social-text {
+        width: 100%;
+        text-align: center;
+      }
+      .card .social-tile .social-label {
+        display: none;
+      }
+    }
+
+    .card {
+      --rx: 0deg;
+      --ry: 0deg;
+      --flip: 0deg;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(var(--rx)) rotateY(calc(var(--flip) + var(--ry)));
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    /* Schnelle Transition nur während des Maus-Tilts */
+    .card.tilting {
+      transition: transform 0.12s ease-out;
+    }
+
+    .card.flipped {
+      --flip: 180deg;
+    }
+
+    .card > .card-face {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      box-sizing: border-box;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card-front {
+      transform: rotateY(0deg);
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+    }
+
+    /* backdrop-filter bricht backface-visibility -> auf den Karten-Seiten deaktivieren
+       und stattdessen einen blickdichten Hintergrund verwenden */
+    .card > .card-face.glass-card {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background: linear-gradient(145deg, #16122e 0%, #0d0b1d 100%);
+    }
+
+    /* Social-Tiles: Icon links, Text rechts (mobil: Icon oben, nur Handle) */
+    .card .social-tile {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .card .social-tile .social-text {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    /* Shimmer Light Reflection Animation */
+    .shimmer-sweep {
+      position: absolute;
+      top: 0;
+      left: -150%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.08),
+        transparent
+      );
+      transform: skewX(-25deg);
+      animation: shimmer 7s infinite ease-in-out;
+      pointer-events: none;
+    }
+
+    @keyframes shimmer {
+      0% { left: -150%; }
+      20%, 100% { left: 150%; }
+    }
+
+    /* Neon Glow Text Utilities */
+    .glow-text-violet {
+      text-shadow: 0 0 12px rgba(157, 0, 255, 0.8);
+    }
+    .glow-text-cyan {
+      text-shadow: 0 0 12px rgba(0, 240, 255, 0.8);
+    }
+  </style>
+</head>
+<body class="cyber-grid relative">
+
+  <!-- Dynamic Particle Canvas -->
+  <canvas id="bgCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+  <!-- Background Ambient Glow Orbs -->
+  <div class="fixed top-1/4 left-1/4 w-80 h-80 bg-neonViolet/20 rounded-full blur-[120px] pointer-events-none z-0"></div>
+  <div class="fixed bottom-1/4 right-1/4 w-80 h-80 bg-neonCyan/15 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+  <header class="relative z-20 w-full max-w-4xl mx-auto p-4 sm:p-6 flex justify-between items-center">
+    <!-- Brand / Status Indicator -->
+    <div class="flex items-center gap-2.5">
+      <div class="w-2.5 h-2.5 rounded-full bg-neonCyan shadow-[0_0_10px_#00F0FF] animate-pulse"></div>
+      <span class="font-display text-xs sm:text-sm font-bold tracking-widest text-slate-300 uppercase">Pandora Systems</span>
+    </div>
+
+  </header>
+
+  <main class="relative z-10 my-auto flex flex-col items-center justify-center p-4">
+    
+    <!-- 3D Card Scene -->
+    <div class="card-scene" id="cardScene">
+      <div class="card" id="card" onclick="flipCard()">
+        
+        <!-- CARD FRONT FACE -->
+        <div class="card-face card-front glass-card p-6 sm:p-7 select-none">
+          <div class="shimmer-sweep"></div>
+
+          <!-- Top Section: Logo & Live Status Badge -->
+          <div class="flex justify-between items-start z-10">
+            <!-- Neon Geometric SVG Logo -->
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-darkSurface border border-neonViolet/60 flex items-center justify-center shadow-[0_0_15px_rgba(157,0,255,0.4)]">
+                <svg class="w-6 h-6 text-neonCyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                  <polyline points="2 17 12 22 22 17" />
+                  <polyline points="2 12 12 17 22 12" />
+                </svg>
+              </div>
+              <div>
+                <span class="font-display font-black text-sm tracking-wider text-white block leading-tight">Pandora</span>
+                <span class="text-[9px] font-mono tracking-[0.2em] text-neonCyan uppercase block">Systems</span>
+              </div>
+            </div>
+
+            <!-- Status Indicator -->
+            <div class="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-1.5 backdrop-blur-sm">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span class="text-[9px] font-mono font-medium text-emerald-300 uppercase tracking-wider">Verfügbar</span>
+            </div>
+          </div>
+
+          <!-- Center Content Section -->
+          <div class="my-auto z-10">
+            <span class="text-[10px] font-mono text-neonCyan tracking-widest uppercase block mb-1">Next-Gen Digital Solutions</span>
+            <h1 class="font-display text-2xl sm:text-3xl font-black text-white tracking-wide leading-tight">
+              Pandora <span class="bg-gradient-to-r from-neonViolet via-purple-300 to-neonCyan bg-clip-text text-transparent glow-text-violet">Systems</span>
+            </h1>
+            <p class="text-[11px] text-slate-300 font-light mt-1 max-w-xs">
+              Cloud Architecture • Cyber Systems • AI Engineering
+            </p>
+          </div>
+
+          <!-- Bottom Footer Action Cue -->
+          <div class="pt-2 border-t border-white/10 flex justify-between items-center z-10">
+            <span class="text-[9px] font-mono text-slate-400">GERMANY • EST. 2026</span>
+            <div class="flex items-center gap-1 text-[11px] font-semibold text-neonCyan bg-neonCyan/10 px-3 py-1 rounded-full border border-neonCyan/30 shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+              <span>✦ Klicken zum Drehen</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD BACK FACE -->
+        <div class="card-face card-back glass-card p-5 sm:p-6 select-none">
+          <div class="shimmer-sweep"></div>
+
+          <!-- Profile Header -->
+          <div class="flex items-center justify-between border-b border-white/10 pb-2.5 z-10">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-neonViolet to-neonCyan p-[2px] shadow-[0_0_12px_rgba(157,0,255,0.4)]">
+                <div class="w-full h-full rounded-[10px] bg-darkBg flex items-center justify-center font-display font-bold text-xs text-neonCyan">
+                  HM
+                </div>
+              </div>
+              <div>
+                <h2 class="font-display font-bold text-sm text-white">Haris Muslic</h2>
+                <p class="text-[10px] text-neonCyan font-mono">AI Supported Solutions Architect</p>
+              </div>
+            </div>
+
+            <!-- Manual Return Button -->
+            <button onclick="flipCard(event)" class="p-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white transition-colors" title="Zurückdrehen">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Contact Details Grid -->
+          <div class="my-auto py-2 z-10 flex flex-col gap-2">
+            <div class="grid grid-cols-2 gap-2">
+            <!-- WhatsApp (Telefon) -->
+            <a href="https://wa.me/4915252044591" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="WhatsApp-Chat öffnen" class="contact-tile p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-green-400/40 transition-all flex items-center justify-between group">
+              <div class="flex items-center gap-2 overflow-hidden">
+                <div class="p-1.5 rounded-lg bg-green-500/15 text-green-400 group-hover:scale-110 transition-transform">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52s.198-.298.298-.497c.099-.198.05-.371-.025-.52s-.669-1.612-.916-2.207c-.242-.579-.487-.5-.669-.51a13 13 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074s2.096 3.2 5.077 4.487c.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413s.248-1.289.173-1.413c-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.82 9.82 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.82 11.82 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.9 11.9 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 0 0-3.48-8.413"/></svg>
+                </div>
+                <div class="truncate">
+                  <span class="block text-[8px] text-slate-400 font-mono">WHATSAPP</span>
+                  <span class="text-[10px] font-medium text-slate-200 truncate block">+49 152 5204 4591</span>
+                </div>
+              </div>
+              <i data-lucide="external-link" class="contact-hint w-3 h-3 text-slate-500 group-hover:text-green-300 flex-shrink-0"></i>
+            </a>
+
+            <!-- Email -->
+            <div onclick="copyText('pandorasystems@gmail.com', 'E-Mail', event)" class="contact-tile p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-neonCyan/40 transition-all flex items-center justify-between cursor-pointer group">
+              <div class="flex items-center gap-2 overflow-hidden">
+                <div class="p-1.5 rounded-lg bg-neonCyan/10 text-neonCyan group-hover:scale-110 transition-transform">
+                  <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                </div>
+                <div class="truncate">
+                  <span class="block text-[8px] text-slate-400 font-mono">E-MAIL</span>
+                  <span class="text-[10px] font-medium text-slate-200 truncate block">pandorasystems@gmail...</span>
+                </div>
+              </div>
+              <i data-lucide="copy" class="contact-hint w-3 h-3 text-slate-500 group-hover:text-neonCyan flex-shrink-0"></i>
+            </div>
+
+            <!-- Website -->
+            <a href="https://pandora-systems.com" target="_blank" onclick="event.stopPropagation()" class="contact-tile p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-neonCyan/40 transition-all flex items-center justify-between group">
+              <div class="flex items-center gap-2 overflow-hidden">
+                <div class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-300 group-hover:scale-110 transition-transform">
+                  <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+                </div>
+                <div class="truncate">
+                  <span class="block text-[8px] text-slate-400 font-mono">WEBSITE</span>
+                  <span class="text-[10px] font-medium text-slate-200 truncate block">pandora-systems.com</span>
+                </div>
+              </div>
+              <i data-lucide="external-link" class="contact-hint w-3 h-3 text-slate-500 group-hover:text-cyan-300 flex-shrink-0"></i>
+            </a>
+
+            <!-- Address -->
+            <div onclick="copyText('Kanzlerstr. 17, 47119 Duisburg', 'Adresse', event)" class="contact-tile p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-emerald-400/40 transition-all flex items-center justify-between cursor-pointer group">
+              <div class="flex items-center gap-2 overflow-hidden">
+                <div class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 group-hover:scale-110 transition-transform">
+                  <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                </div>
+                <div class="truncate">
+                  <span class="block text-[8px] text-slate-400 font-mono">STANDORT</span>
+                  <span class="text-[10px] font-medium text-slate-200 truncate block">47119 Duisburg, DE</span>
+                </div>
+              </div>
+              <i data-lucide="copy" class="contact-hint w-3 h-3 text-slate-500 group-hover:text-emerald-300 flex-shrink-0"></i>
+            </div>
+            </div>
+
+            <!-- Social Profiles: Discord / Telegram / LinkedIn -->
+            <div class="grid grid-cols-3 gap-2">
+              <div onclick="copyText('pandora.systems', 'Discord-Name', event)" title="Discord-Name kopieren" class="social-tile p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-indigo-400/40 transition-all cursor-pointer group">
+                <div class="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-300 group-hover:scale-110 transition-transform flex-shrink-0">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.37a19.8 19.8 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.3 18.3 0 0 0-5.487 0 13 13 0 0 0-.617-1.25.08.08 0 0 0-.079-.037A19.7 19.7 0 0 0 3.677 4.37a.1.1 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.08.08 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.08.08 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13 13 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10 10 0 0 0 .372-.292.07.07 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.07.07 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.3 12.3 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.08.08 0 0 0 .084.028 19.8 19.8 0 0 0 6.002-3.03.08.08 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.06.06 0 0 0-.031-.03M8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418m7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418"/></svg>
+                </div>
+                <div class="social-text">
+                  <span class="social-label block text-[8px] text-slate-400 font-mono">DISCORD</span>
+                  <span class="text-[10px] font-medium text-slate-200 truncate block">pandora.systems</span>
+                </div>
+              </div>
+              <a href="https://t.me/pandora_systems" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Telegram öffnen" class="social-tile p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-sky-400/40 transition-all cursor-pointer group">
+                <div class="p-1.5 rounded-lg bg-sky-500/15 text-sky-300 group-hover:scale-110 transition-transform flex-shrink-0">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024q-.159.037-5.061 3.345-.72.495-1.302.48c-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789q.04-.324.893-.663 5.247-2.286 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635"/></svg>
+                </div>
+                <div class="social-text">
+                  <span class="social-label block text-[8px] text-slate-400 font-mono">TELEGRAM</span>
+                  <span class="text-[10px] font-medium text-slate-200 truncate block">@pandora_systems</span>
+                </div>
+              </a>
+              <a href="https://www.linkedin.com/in/pandora-systems" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="LinkedIn öffnen" class="social-tile p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-blue-400/40 transition-all cursor-pointer group">
+                <div class="p-1.5 rounded-lg bg-blue-500/15 text-blue-300 group-hover:scale-110 transition-transform flex-shrink-0">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37z"/></svg>
+                </div>
+                <div class="social-text">
+                  <span class="social-label block text-[8px] text-slate-400 font-mono">LINKEDIN</span>
+                  <span class="text-[10px] font-medium text-slate-200 truncate block">pandora-systems</span>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Bottom Action Buttons & Indicator -->
+          <div class="pt-2 border-t border-white/10 flex items-center justify-between gap-2 z-10">
+            <button onclick="downloadVCard(event)" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-neonViolet to-neonCyan text-black font-semibold text-[11px] flex items-center gap-1.5 shadow-[0_0_12px_rgba(0,240,255,0.3)] hover:opacity-90 active:scale-95 transition-all">
+              <i data-lucide="download" class="w-3 h-3"></i>
+              <span>vCard Speichern</span>
+            </button>
+
+            <span class="text-[10px] font-mono text-neonCyan flex items-center gap-1">
+              <span>✦ Klicken zum Zurückdrehen</span>
+            </span>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Subtitle Helper -->
+    <p class="mt-6 text-xs text-slate-400 font-mono flex items-center gap-2 bg-darkSurface/60 px-4 py-2 rounded-full border border-neonViolet/20">
+      <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5 text-neonCyan animate-bounce"></i>
+      <span>Interaktive Visitenkarte — Tippen oder Klicken zum Wenden</span>
+    </p>
+
+  </main>
+
+  <!-- Toast Notification Box -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="px-5 py-2.5 rounded-2xl bg-darkSurface/90 backdrop-blur-xl border border-neonCyan/50 shadow-[0_0_20px_rgba(0,240,255,0.3)] text-xs font-mono text-neonCyan flex items-center gap-2.5">
+      <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+      <span id="toastMsg">Kopiert!</span>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="relative z-10 w-full max-w-4xl mx-auto p-4 text-center text-[10px] text-slate-500 font-mono">
+    &copy; 2026 Pandora Systems • High-Performance 3D Visitenkarte
+  </footer>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    let soundEnabled = true;
+
+    // Web Audio API Synthesizer for Interactive Feedback
+    function playAudio(type = 'flip') {
+      if (!soundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        if (type === 'flip') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(300, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
+          gain.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.15);
+        } else if (type === 'success') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08); // E5
+          gain.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        }
+      } catch (e) {}
+    }
+
+    // Flip Card Toggle Logic
+    let flipLock = false;
+    function flipCard(event) {
+      if (event) event.stopPropagation();
+      const card = document.getElementById('card');
+      flipLock = true;
+      card.classList.remove('tilting');
+      card.classList.toggle('flipped');
+      playAudio('flip');
+      setTimeout(() => { flipLock = false; }, 800);
+    }
+
+    // Copying text to clipboard
+    function copyText(text, label, event) {
+      if (event) event.stopPropagation();
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast(`${label} kopiert! ✨`);
+        playAudio('success');
+      } catch (err) {
+        showToast('Kopieren fehlgeschlagen');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // Download vCard
+    function downloadVCard(event) {
+      if (event) event.stopPropagation();
+      const vcard = `BEGIN:VCARD
+VERSION:3.0
+FN:Haris Muslic
+ORG:Pandora Systems
+TITLE:AI Supported Solutions Architect
+TEL;TYPE=CELL:+49 152 5204 4591
+EMAIL:pandorasystems@gmail.com
+URL:https://pandora-systems.com
+X-SOCIALPROFILE;TYPE=linkedin:https://www.linkedin.com/in/pandora-systems
+X-SOCIALPROFILE;TYPE=telegram:https://t.me/pandora_systems
+NOTE:Discord: pandora.systems
+ADR;TYPE=WORK:;;Innovation Hub 1;Berlin;;10115;Germany
+END:VCARD`;
+
+      const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.setAttribute('download', 'Haris_Muslic_PandoraSystems.vcf');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('vCard heruntergeladen! 📇');
+      playAudio('success');
+    }
+
+    // Toast Popup display
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // 3D Mouse Tilt Interactive Logic (nutzt CSS-Variablen, stört den Flip nicht)
+    const cardScene = document.getElementById('cardScene');
+    const card = document.getElementById('card');
+
+    cardScene.addEventListener('mousemove', (e) => {
+      const rect = cardScene.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      const rotateX = ((y - centerY) / centerY) * -12;
+      const rotateY = ((x - centerX) / centerX) * 12;
+
+      if (!flipLock) card.classList.add('tilting');
+      card.style.setProperty('--rx', rotateX.toFixed(2) + 'deg');
+      card.style.setProperty('--ry', rotateY.toFixed(2) + 'deg');
+    });
+
+    cardScene.addEventListener('mouseleave', () => {
+      card.classList.remove('tilting');
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+    });
+
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = (Math.random() - 0.5) * 0.3;
+        this.size = Math.random() * 2 + 1;
+        this.alpha = Math.random() * 0.4 + 0.1;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 240, 255, ${this.alpha})`;
+        ctx.fill();
+      }
+    }
+
+    const particleCount = Math.min(70, Math.floor(window.innerWidth / 18));
+    for (let i = 0; i < particleCount; i++) particles.push(new Particle());
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p) => { p.update(); p.draw(); });
+      requestAnimationFrame(animate);
+    }
+    animate();
+  </script>
+</body>
+</html>
